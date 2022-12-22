@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: informer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: informer
+  labels:
+    ack/creator: "ack"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: informer-binding
+  labels:
+    ack/creator: "ack"
+subjects:
+  - kind: ServiceAccount
+    name: informer
+roleRef:
+  kind: ClusterRole
+  name: informer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: informer
+  labels:
+    app: informer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: informer
+  template:
+    metadata:
+      labels:
+        app: informer
+    spec:
+      containers:
+        - name: informer
+          image: registry.cn-hongkong.aliyuncs.com/haoshuwei/informer:v1
+          imagePullPolicy: Always
+          command: ['sh', '-c', '/usr/local/bin/informer --kubeconfig /etc/kube/kubeconfig']
+    serviceAccountName: informer
